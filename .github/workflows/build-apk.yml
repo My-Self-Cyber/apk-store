@@ -56,6 +56,8 @@ jobs:
               c = f.read()
           if "INTERNET" not in c:
               c = c.replace("<application", "<uses-permission android:name=\"android.permission.INTERNET\" />\n    <application")
+          if "<queries>" not in c:
+              c = c.replace("<application", "<queries>\n        <intent>\n            <action android:name=\"android.intent.action.VIEW\" />\n            <category android:name=\"android.intent.category.BROWSABLE\" />\n            <data android:scheme=\"https\" />\n        </intent>\n    </queries>\n    <application")
           c = c.replace("android:label=\"apk_store_app\"", "android:label=\"APKStore\"")
           if "com.google.android.gms.ads.APPLICATION_ID" not in c:
               c = c.replace("</application>", "    <meta-data android:name=\"com.google.android.gms.ads.APPLICATION_ID\" android:value=\"ca-app-pub-3839531386767343~2207859262\"/>\n    </application>")

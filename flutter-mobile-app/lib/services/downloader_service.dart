@@ -15,12 +15,22 @@ class DownloaderService {
 
       onProgress(0.5);
 
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      bool launched = false;
+      try {
+        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        try {
+          launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+        } catch (_) {
+          launched = false;
+        }
+      }
+
+      if (launched) {
         onProgress(1.0);
         onComplete();
       } else {
-        onError('Could not launch download URL: $downloadUrl');
+        onError('Could not launch browser for download: $downloadUrl');
       }
     } catch (e) {
       onError(e.toString());
