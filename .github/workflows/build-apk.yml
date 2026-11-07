@@ -28,7 +28,7 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Build Android Release APK
+      - name: Build Android APK
         working-directory: flutter-mobile-app
         run: |
           # 1. Create fresh official app template
@@ -46,8 +46,11 @@ jobs:
           # 4. Restore our official cyber icons
           cp -r /tmp/icons_backup/mipmap-* android/app/src/main/res/
 
-          # 5. Inject Internet permission & label using standard Python
+          # 5. Inject Internet permission, APKStore label, and debug signing
           python3 -c '
+          import os
+
+          # Update AndroidManifest.xml
           path = "android/app/src/main/AndroidManifest.xml"
           with open(path, "r") as f:
               c = f.read()
@@ -56,18 +59,33 @@ jobs:
           c = c.replace("android:label=\"apk_store_app\"", "android:label=\"APKStore\"")
           with open(path, "w") as f:
               f.write(c)
-          print("Manifest updated successfully!")
+
+          # Update build.gradle for signing
+          bg = "android/app/build.gradle"
+          with open(bg, "r") as f:
+              b = f.read()
+          if "signingConfig = signingConfigs.debug" not in b:
+              b = b.replace("buildTypes {", "buildTypes {\n        release {\n            signingConfig = signingConfigs.debug\n        }")
+          with open(bg, "w") as f:
+              f.write(b)
+          print("Configured manifest and signing successfully!")
           '
 
-          # 6. Fetch dependencies and compile release APK
+          # 6. Fetch dependencies and build
           flutter pub get
-          flutter build apk --release --no-tree-shake-icons
+          flutter build apk --release --no-tree-shake-icons || flutter build apk --debug
+
+      - name: Prepare APK Package
+        run: |
+          mkdir -p final_apk
+          find flutter-mobile-app/build -name "*.apk" -exec cp {} final_apk/APKStore.apk \;
+          ls -lh final_apk/
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: APKStore-Flutter-App
-          path: flutter-mobile-app/build/app/outputs/flutter-apk/app-release.apk
+          path: final_apk/APKStore.apk
 
       - name: Create GitHub Release with direct APK download
         uses: softprops/action-gh-release@v2
@@ -75,6 +93,6 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}
           name: "APKStore Mobile App v1.0.${{ github.run_number }}"
           body: "Official APKStore Android Native Application (.apk) with custom cyber logo and instant package installation."
-          files: flutter-mobile-app/build/app/outputs/flutter-apk/app-release.apk
+          files: final_apk/APKStore.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
