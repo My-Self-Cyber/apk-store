@@ -6,6 +6,14 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "APKVault - Direct Android App & APK Store",
   description: "Browse, download, and install latest verified Android APKs directly with zero wait times.",
+  icons: {
+    icon: [
+      { url: "/logo.webp" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: "/logo.webp",
+    apple: "/logo.webp",
+  },
 };
 
 export default function RootLayout({
