@@ -28,14 +28,18 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Make Gradle Wrapper Executable
-        run: chmod +x flutter-mobile-app/android/gradlew
+      - name: Configure Flutter and Android Environment
+        run: |
+          FLUTTER_DIR=$(dirname $(dirname $(which flutter)))
+          echo "Flutter directory: $FLUTTER_DIR"
+          echo "flutter.sdk=$FLUTTER_DIR" > flutter-mobile-app/android/local.properties
+          chmod +x flutter-mobile-app/android/gradlew
 
       - name: Build Android APK
         working-directory: flutter-mobile-app
         run: |
           flutter pub get
-          flutter build apk --release --no-tree-shake-icons || flutter build apk --debug
+          flutter build apk --debug
 
       - name: Prepare APK Package
         run: |
