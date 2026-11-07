@@ -28,24 +28,43 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Configure Flutter and Android Environment
+      - name: Build Official Android APK
         run: |
-          FLUTTER_DIR=$(dirname $(dirname $(which flutter)))
-          echo "Flutter directory: $FLUTTER_DIR"
-          echo "flutter.sdk=$FLUTTER_DIR" > flutter-mobile-app/android/local.properties
-          chmod +x flutter-mobile-app/android/gradlew
+          set -e
 
-      - name: Build Android APK
-        working-directory: flutter-mobile-app
-        run: |
+          # 1. Create fresh official Flutter project
+          flutter create --org com.apkstore --project-name apk_store_app /tmp/fresh_app
+
+          # 2. Copy code, assets, and dependencies
+          cp -r flutter-mobile-app/lib /tmp/fresh_app/
+          cp -r flutter-mobile-app/assets /tmp/fresh_app/
+          cp flutter-mobile-app/pubspec.yaml /tmp/fresh_app/
+
+          # 3. Copy our cyber logo mipmaps
+          cp -r flutter-mobile-app/android/app/src/main/res/mipmap-* /tmp/fresh_app/android/app/src/main/res/
+
+          # 4. Update AndroidManifest.xml for APKStore title & Internet access
+          python3 -c '
+          manifest = "/tmp/fresh_app/android/app/src/main/AndroidManifest.xml"
+          with open(manifest, "r") as f:
+              c = f.read()
+          if "INTERNET" not in c:
+              c = c.replace("<application", "<uses-permission android:name=\"android.permission.INTERNET\" />\n    <application")
+          c = c.replace("android:label=\"apk_store_app\"", "android:label=\"APKStore\"")
+          with open(manifest, "w") as f:
+              f.write(c)
+          print("Updated AndroidManifest successfully!")
+          '
+
+          # 5. Build native APK
+          cd /tmp/fresh_app
           flutter pub get
           flutter build apk --debug
 
-      - name: Prepare APK Package
-        run: |
-          mkdir -p final_apk
-          find flutter-mobile-app/build -name "*.apk" -exec cp {} final_apk/APKStore.apk \;
-          ls -lh final_apk/
+          # 6. Copy final APK to workspace
+          mkdir -p $GITHUB_WORKSPACE/final_apk
+          cp build/app/outputs/flutter-apk/app-debug.apk $GITHUB_WORKSPACE/final_apk/APKStore.apk
+          ls -lh $GITHUB_WORKSPACE/final_apk/APKStore.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
