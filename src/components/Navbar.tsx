@@ -63,8 +63,17 @@ export default function Navbar() {
             />
           </div>
 
+          {/* Download Mobile App Button */}
+          <a
+            href="https://github.com/My-Self-Cyber/apk-store/releases/latest/download/APKStore.apk"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#00e676] hover:bg-[#00c853] text-black font-extrabold text-xs shadow-md shadow-[#00e676]/20 transition-transform active:scale-95"
+            title="Download APKStore Android App"
+          >
+            <span>📱 Get App</span>
+          </a>
+
           {/* 100% Virus Free Badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#00e676]/10 border border-[#00e676]/30 text-[#00e676] text-xs font-bold whitespace-nowrap">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#00e676]/10 border border-[#00e676]/30 text-[#00e676] text-xs font-bold whitespace-nowrap hidden sm:flex">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>100% Virus Free</span>
           </div>
