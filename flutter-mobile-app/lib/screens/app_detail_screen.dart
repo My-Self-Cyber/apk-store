@@ -235,9 +235,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                           child: const Icon(Icons.broken_image, color: Colors.grey),
                         ),
                       ),
-                   ,
-      bottomNavigationBar: const BannerAdWidget(),
-    );
+                    );
                   },
                 ),
               ),
@@ -287,6 +285,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: const BannerAdWidget(),
     );
   }
 
