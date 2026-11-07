@@ -28,50 +28,12 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x flutter-mobile-app/android/gradlew
+
       - name: Build Android APK
         working-directory: flutter-mobile-app
         run: |
-          # 1. Create fresh official app template
-          flutter create --org com.apkstore --project-name apk_store_app /tmp/fresh_app
-
-          # 2. Backup our official cyber launcher icons
-          mkdir -p /tmp/icons_backup
-          cp -r android/app/src/main/res/mipmap-* /tmp/icons_backup/
-
-          # 3. Replace android directory with fresh official scaffolding
-          rm -rf android
-          cp -r /tmp/fresh_app/android android
-          chmod +x android/gradlew
-
-          # 4. Restore our official cyber icons
-          cp -r /tmp/icons_backup/mipmap-* android/app/src/main/res/
-
-          # 5. Inject Internet permission, APKStore label, and debug signing
-          python3 -c '
-          import os
-
-          # Update AndroidManifest.xml
-          path = "android/app/src/main/AndroidManifest.xml"
-          with open(path, "r") as f:
-              c = f.read()
-          if "android.permission.INTERNET" not in c:
-              c = c.replace("<application", "<uses-permission android:name=\"android.permission.INTERNET\" />\n    <application")
-          c = c.replace("android:label=\"apk_store_app\"", "android:label=\"APKStore\"")
-          with open(path, "w") as f:
-              f.write(c)
-
-          # Update build.gradle for signing
-          bg = "android/app/build.gradle"
-          with open(bg, "r") as f:
-              b = f.read()
-          if "signingConfig = signingConfigs.debug" not in b:
-              b = b.replace("buildTypes {", "buildTypes {\n        release {\n            signingConfig = signingConfigs.debug\n        }")
-          with open(bg, "w") as f:
-              f.write(b)
-          print("Configured manifest and signing successfully!")
-          '
-
-          # 6. Fetch dependencies and build
           flutter pub get
           flutter build apk --release --no-tree-shake-icons || flutter build apk --debug
 
@@ -92,7 +54,7 @@ jobs:
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: "APKStore Mobile App v1.0.${{ github.run_number }}"
-          body: "Official APKStore Android Native Application (.apk) with custom cyber logo and instant package installation."
+          body: "Official APKStore Android Native Application (.apk) with cyber logo and instant package installation."
           files: final_apk/APKStore.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
