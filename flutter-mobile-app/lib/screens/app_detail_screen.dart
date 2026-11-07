@@ -82,12 +82,10 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                     width: 76,
                     height: 76,
                     color: const Color(0xFF131B2E),
-                    child: Image.network(ApiService.resolveUrl(app.iconUrl, fit: BoxFit.cover, errorBuilder: (c, e, s) => Image.asset('assets/images/logo.png')),
+                    child: Image.network(
+                      ApiService.resolveUrl(app.iconUrl),
                       fit: BoxFit.cover,
-                      placeholder: (c, u) => const Center(
-                        child: CircularProgressIndicator(color: AppColors.neonGreen, strokeWidth: 2),
-                      ),
-                      errorWidget: (c, u, e) => Image.asset('assets/images/logo.webp'),
+                      errorBuilder: (c, e, s) => Image.asset('assets/images/logo.png'),
                     ),
                   ),
                 ),
@@ -225,10 +223,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                         app.screenshots[index],
                         fit: BoxFit.cover,
                         width: 280,
-                        errorBuilder: (c, e, s) => Container(width: 280, color: AppColors.cardBg, child: const Icon(Icons.broken_image, color: Colors.grey)),
-                      ),
-                        ),
-                        errorWidget: (c, u, e) => Container(
+                        errorBuilder: (c, e, s) => Container(
                           width: 280,
                           color: AppColors.cardBg,
                           child: const Icon(Icons.broken_image, color: Colors.grey),
