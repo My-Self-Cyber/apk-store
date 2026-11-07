@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAllApps } from "@/lib/db";
+import { getAllApps, loadDbFromR2 } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
+    // Ensure fresh catalog from Cloudflare R2
+    await loadDbFromR2();
+
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category") || undefined;
     const search = searchParams.get("search") || undefined;

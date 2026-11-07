@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAppById, incrementDownload } from "@/lib/db";
+import { getAppById, incrementDownload, loadDbFromR2 } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +9,7 @@ export async function GET(
 ) {
   try {
     const { id } = params;
+    await loadDbFromR2();
     const app = getAppById(id);
 
     if (!app) {

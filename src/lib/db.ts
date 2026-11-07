@@ -1,7 +1,59 @@
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { AppItem, CATEGORIES } from "@/types/app";
+
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || "";
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || "";
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || "";
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || "";
+
+const r2Client = (R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_BUCKET_NAME)
+  ? new S3Client({
+      region: "auto",
+      endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: R2_ACCESS_KEY_ID,
+        secretAccessKey: R2_SECRET_ACCESS_KEY,
+      },
+    })
+  : null;
+
+export async function syncDbToR2(apps: AppItem[]): Promise<void> {
+  if (!r2Client) return;
+  try {
+    await r2Client.send(
+      new PutObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: "db/apps.json",
+        Body: JSON.stringify(apps, null, 2),
+        ContentType: "application/json",
+      })
+    );
+  } catch (err) {
+    console.error("Failed to sync DB to R2:", err);
+  }
+}
+
+export async function loadDbFromR2(): Promise<AppItem[] | null> {
+  if (!r2Client) return null;
+  try {
+    const res = await r2Client.send(
+      new GetObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: "db/apps.json",
+      })
+    );
+    if (res.Body) {
+      const text = await res.Body.transformToString();
+      const parsed = JSON.parse(text) as AppItem[];
+      inMemoryApps = parsed;
+      return parsed;
+    }
+  } catch (err) {}
+  return null;
+}
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "apps.json");
@@ -242,12 +294,14 @@ export function saveDb(apps: AppItem[]): void {
 
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(apps, null, 2), "utf-8");
-    return;
   } catch (err) {}
 
   try {
     fs.writeFileSync(TMP_DB_FILE, JSON.stringify(apps, null, 2), "utf-8");
   } catch (err) {}
+
+  // Sync permanently to Cloudflare R2 cloud storage
+  syncDbToR2(apps).catch((e) => console.error("R2 sync error:", e));
 }
 
 export function getAllApps(category?: string, search?: string): AppItem[] {
