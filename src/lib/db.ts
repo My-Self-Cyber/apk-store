@@ -8,18 +8,14 @@ const DB_FILE = path.join(DATA_DIR, "apps.json");
 const TMP_DB_FILE = path.join(os.tmpdir(), "apps.json");
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 
-// In-memory cache for serverless environments (Vercel)
 let inMemoryApps: AppItem[] | null = null;
 
-// Ensure directories exist safely
 function ensureDirs() {
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
-  } catch (e) {
-    // Read-only filesystem in Vercel serverless, silently ignore
-  }
+  } catch (e) {}
 
   try {
     if (!fs.existsSync(path.join(UPLOAD_DIR, "apks"))) {
@@ -28,9 +24,7 @@ function ensureDirs() {
     if (!fs.existsSync(path.join(UPLOAD_DIR, "images"))) {
       fs.mkdirSync(path.join(UPLOAD_DIR, "images"), { recursive: true });
     }
-  } catch (e) {
-    // Read-only filesystem in Vercel serverless, silently ignore
-  }
+  } catch (e) {}
 }
 
 export function formatBytes(bytes: number, decimals = 1): string {
@@ -44,78 +38,149 @@ export function formatBytes(bytes: number, decimals = 1): string {
 
 const SEED_APPS: AppItem[] = [
   {
-    id: "quick-notes-pro",
-    name: "Quick Notes Pro",
-    packageName: "com.apkstore.quicknotes",
-    version: "2.4.0",
-    versionCode: 24,
-    category: "Productivity",
-    developer: "Antigravity Devs",
-    shortDescription: "Ultra-fast offline markdown notes and checklists.",
-    description: "Quick Notes Pro is a clean, minimal, distraction-free note-taking application designed for productivity. Take notes, make task checklists, format using markdown, and backup everything safely on your local device.",
-    iconUrl: "/sample-icons/notes.svg",
-    screenshots: [
-      "https://images.unsplash.com/photo-1517842645767-c639042777db?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=600&auto=format&fit=crop&q=80"
-    ],
-    apkFileName: "quicknotes-2.4.0.apk",
-    apkUrl: "/uploads/apks/sample-quicknotes.apk",
-    fileSize: 8400000,
-    fileSizeFormatted: "8.0 MB",
-    downloadCount: 342,
-    minAndroidVersion: "Android 8.0+",
-    changelog: "• Added dark mode\n• Export notes to PDF\n• Bug fixes and speed improvements",
-    createdAt: "2026-11-01T10:00:00.000Z",
-    updatedAt: "2026-11-05T14:20:00.000Z",
-  },
-  {
-    id: "retro-runner-arcade",
-    name: "Retro Runner 2D",
-    packageName: "com.apkstore.retrorunner",
-    version: "1.0.5",
-    versionCode: 105,
+    id: "apex-moto-pro",
+    name: "Apex Moto Pro",
+    packageName: "com.game.apexmotopro",
+    version: "1.0.4",
+    versionCode: 104,
     category: "Games",
-    developer: "PixelForge Studios",
-    shortDescription: "Exciting 8-bit endless runner with synthwave music.",
-    description: "Dodge obstacles, collect coins, and unlock neon retro skins in this high-speed endless runner! Perfect for casual gaming sessions.",
-    iconUrl: "/sample-icons/runner.svg",
+    developer: "SpeedForge Interactive",
+    shortDescription: "High-octane motorcycle racing simulator with dynamic weather physics.",
+    description: "Experience extreme superbike racing with authentic sound physics, customizable livery, and intense online multiplayer tournaments.",
+    iconUrl: "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=200&auto=format&fit=crop&q=80",
     screenshots: [
-      "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=600&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=600&auto=format&fit=crop&q=80"
     ],
-    apkFileName: "retrorunner-1.0.5.apk",
-    apkUrl: "/uploads/apks/sample-retrorunner.apk",
-    fileSize: 24500000,
-    fileSizeFormatted: "23.4 MB",
-    downloadCount: 1280,
+    apkFileName: "apex-moto-pro-1.0.4.apk",
+    apkUrl: "/uploads/apks/sample-apex-moto.apk",
+    fileSize: 67633152,
+    fileSizeFormatted: "64.5 MB",
+    downloadCount: 42100,
     minAndroidVersion: "Android 9.0+",
-    changelog: "• 3 new cyber tracks added\n• Leaderboard synchronization\n• Performance optimizations",
-    createdAt: "2026-10-20T12:00:00.000Z",
-    updatedAt: "2026-11-04T09:15:00.000Z",
+    changelog: "• Added 2 new championship tracks\n• Improved gyroscope steering response\n• Physics engine update",
+    createdAt: "2026-11-01T10:00:00.000Z",
+    updatedAt: "2026-11-07T08:00:00.000Z",
   },
   {
-    id: "smart-file-manager",
-    name: "Smart File Explorer",
-    packageName: "com.apkstore.filemanager",
-    version: "3.1.2",
-    versionCode: 312,
-    category: "Tools",
-    developer: "CoreUtility Apps",
-    shortDescription: "Clean, ad-free file manager with APK installer.",
-    description: "Manage your internal storage, SD card, and USB OTG drives seamlessly. Includes built-in APK extractor and package installer with permission inspector.",
-    iconUrl: "/sample-icons/files.svg",
+    id: "football-3d-arena",
+    name: "Football 3D Arena",
+    packageName: "com.sports.football3d",
+    version: "2.1.0",
+    versionCode: 210,
+    category: "Games",
+    developer: "StadiumPulse Studios",
+    shortDescription: "Realistic football simulation with fluid motions and authentic stadium atmospheres.",
+    description: "Lead your dream club to the world championship in Football 3D Arena! Full tactical controls, career manager mode, and motion-captured animations.",
+    iconUrl: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=200&auto=format&fit=crop&q=80",
     screenshots: [
-      "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80"
+      "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=600&auto=format&fit=crop&q=80"
     ],
-    apkFileName: "smartfiles-3.1.2.apk",
-    apkUrl: "/uploads/apks/sample-smartfiles.apk",
-    fileSize: 12800000,
-    fileSizeFormatted: "12.2 MB",
-    downloadCount: 890,
+    apkFileName: "football-3d-2.1.0.apk",
+    apkUrl: "/uploads/apks/sample-football.apk",
+    fileSize: 118279168,
+    fileSizeFormatted: "112.8 MB",
+    downloadCount: 89400,
+    minAndroidVersion: "Android 8.0+",
+    changelog: "• 2026 World Tournament roster updates\n• New penalty shootout mechanics\n• 60 FPS graphics unlock",
+    createdAt: "2026-10-25T14:00:00.000Z",
+    updatedAt: "2026-11-06T12:00:00.000Z",
+  },
+  {
+    id: "vfx-flow-player",
+    name: "VFX Flow Player",
+    packageName: "com.tools.vfxflow",
+    version: "0.9.8",
+    versionCode: 98,
+    category: "Tools",
+    developer: "CreativeEngine Labs",
+    shortDescription: "Ultra-smooth 4K video player with hardware decoding and audio boost.",
+    description: "VFX Flow Player provides gesture playback, multi-track subtitle syncing, floating picture-in-picture window, and studio equalizer.",
+    iconUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80",
+    screenshots: [
+      "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80"
+    ],
+    apkFileName: "vfx-flow-0.9.8.apk",
+    apkUrl: "/uploads/apks/sample-vfxflow.apk",
+    fileSize: 19084083,
+    fileSizeFormatted: "18.2 MB",
+    downloadCount: 31200,
     minAndroidVersion: "Android 7.0+",
-    changelog: "• Support for Android 15\n• Faster search indexing\n• ZIP/RAR support",
-    createdAt: "2026-09-15T08:30:00.000Z",
-    updatedAt: "2026-11-02T16:45:00.000Z",
+    changelog: "• Added AV1 codec hardware acceleration\n• Background audio playback\n• Subtitle delay adjuster",
+    createdAt: "2026-10-18T11:00:00.000Z",
+    updatedAt: "2026-11-05T09:30:00.000Z",
+  },
+  {
+    id: "android-player",
+    name: "Android Player",
+    packageName: "com.media.androidplayer",
+    version: "1.0.0",
+    versionCode: 100,
+    category: "Apps",
+    developer: "Apex Core Works",
+    shortDescription: "Clean, ad-free media library and playlist manager.",
+    description: "Modern Android audio and video suite supporting lossless FLAC, ALAC, MP4, and MKV with smart metadata tag editing.",
+    iconUrl: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=200&auto=format&fit=crop&q=80",
+    screenshots: [
+      "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80"
+    ],
+    apkFileName: "android-player-1.0.0.apk",
+    apkUrl: "/uploads/apks/sample-player.apk",
+    fileSize: 12582912,
+    fileSizeFormatted: "12.0 MB",
+    downloadCount: 15400,
+    minAndroidVersion: "Android 8.0+",
+    changelog: "• Initial public release\n• High-resolution album art support\n• Sleep timer feature",
+    createdAt: "2026-11-02T16:00:00.000Z",
+    updatedAt: "2026-11-06T15:00:00.000Z",
+  },
+  {
+    id: "photo-ai",
+    name: "Photo AI",
+    packageName: "com.camera.photoai",
+    version: "1.5.0",
+    versionCode: 150,
+    category: "Apps",
+    developer: "NeuralVision Inc.",
+    shortDescription: "On-device AI photo enhancer, blur fixer, and background remover.",
+    description: "Enhance grainy photos, upscale old pictures to 4K, remove photobombers with magic eraser, and apply cinematic color grading.",
+    iconUrl: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200&auto=format&fit=crop&q=80",
+    screenshots: [
+      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&auto=format&fit=crop&q=80"
+    ],
+    apkFileName: "photo-ai-1.5.0.apk",
+    apkUrl: "/uploads/apks/sample-photoai.apk",
+    fileSize: 47290777,
+    fileSizeFormatted: "45.1 MB",
+    downloadCount: 52800,
+    minAndroidVersion: "Android 10+",
+    changelog: "• Neural HDR engine upgrade\n• 2x faster background cutout\n• New vintage lens filters",
+    createdAt: "2026-09-30T10:00:00.000Z",
+    updatedAt: "2026-11-04T18:00:00.000Z",
+  },
+  {
+    id: "sound-equalizer",
+    name: "Sound Equalizer",
+    packageName: "com.audio.soundeq",
+    version: "0.8.0",
+    versionCode: 80,
+    category: "Tools",
+    developer: "AcousticPro Studio",
+    shortDescription: "10-band audio equalizer with 3D virtualizer and bass boost.",
+    description: "Maximize your headphones and phone speaker potential with custom sound presets, 3D surround sound effect, and loudness maximizer.",
+    iconUrl: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=200&auto=format&fit=crop&q=80",
+    screenshots: [
+      "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&auto=format&fit=crop&q=80"
+    ],
+    apkFileName: "sound-eq-0.8.0.apk",
+    apkUrl: "/uploads/apks/sample-soundeq.apk",
+    fileSize: 8912896,
+    fileSizeFormatted: "8.5 MB",
+    downloadCount: 22100,
+    minAndroidVersion: "Android 7.0+",
+    changelog: "• New Bass Boost algorithm\n• Auto-detect headphone model\n• Reduced battery usage",
+    createdAt: "2026-10-12T08:00:00.000Z",
+    updatedAt: "2026-11-03T11:20:00.000Z",
   }
 ];
 
@@ -126,29 +191,22 @@ export function getDb(): AppItem[] {
 
   ensureDirs();
 
-  // Try reading from persistent DB file
   try {
     if (fs.existsSync(DB_FILE)) {
       const raw = fs.readFileSync(DB_FILE, "utf-8");
       inMemoryApps = JSON.parse(raw) as AppItem[];
       return inMemoryApps;
     }
-  } catch (err) {
-    // If reading failed, continue to fallback
-  }
+  } catch (err) {}
 
-  // Try reading from /tmp on serverless
   try {
     if (fs.existsSync(TMP_DB_FILE)) {
       const raw = fs.readFileSync(TMP_DB_FILE, "utf-8");
       inMemoryApps = JSON.parse(raw) as AppItem[];
       return inMemoryApps;
     }
-  } catch (err) {
-    // Continue
-  }
+  } catch (err) {}
 
-  // Fallback to seed data
   inMemoryApps = [...SEED_APPS];
   saveDb(inMemoryApps);
   return inMemoryApps;
@@ -158,20 +216,14 @@ export function saveDb(apps: AppItem[]): void {
   inMemoryApps = apps;
   ensureDirs();
 
-  // Try saving to project data dir
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(apps, null, 2), "utf-8");
     return;
-  } catch (err) {
-    // Read-only filesystem in Vercel
-  }
+  } catch (err) {}
 
-  // Fallback to /tmp on serverless
   try {
     fs.writeFileSync(TMP_DB_FILE, JSON.stringify(apps, null, 2), "utf-8");
-  } catch (err) {
-    // In-memory cache handles it
-  }
+  } catch (err) {}
 }
 
 export function getAllApps(category?: string, search?: string): AppItem[] {

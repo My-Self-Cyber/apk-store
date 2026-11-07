@@ -7,15 +7,14 @@ import {
   Trash2, 
   Eye, 
   Download, 
-  ShieldAlert, 
   Lock, 
   RefreshCw, 
   HardDrive, 
   Layers, 
   TrendingUp,
-  CheckCircle,
-  ExternalLink,
-  LogOut
+  LogOut,
+  BadgeCheck,
+  ShieldCheck
 } from "lucide-react";
 import { AppItem } from "@/types/app";
 
@@ -53,7 +52,7 @@ export default function AdminDashboard() {
         setIsAuthenticated(true);
         loadApps();
       } else {
-        setLoginError(data.error || "Incorrect password. Default is: admin123");
+        setLoginError("Invalid password. Please check and try again.");
       }
     } catch (err) {
       setLoginError("Failed to authenticate with server");
@@ -81,7 +80,7 @@ export default function AdminDashboard() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"? This removes the APK file from server.`)) {
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
       return;
     }
     try {
@@ -102,24 +101,25 @@ export default function AdminDashboard() {
     }
   };
 
-  // Compute aggregate stats
   const totalDownloads = apps.reduce((sum, a) => sum + (a.downloadCount || 0), 0);
   const totalBytes = apps.reduce((sum, a) => sum + (a.fileSize || 0), 0);
   const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
 
-  // Login view
+  // Login view - Completely secured, zero password hints
   if (!isAuthenticated) {
     return (
-      <div className="max-w-md mx-auto py-16">
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
-          <div className="text-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
-              <Lock className="w-6 h-6" />
+      <div className="max-w-md mx-auto py-20">
+        <div className="bg-[#0d131f] border border-slate-800 rounded-3xl p-8 shadow-2xl space-y-6">
+          <div className="text-center space-y-3">
+            <div className="w-14 h-14 rounded-2xl bg-[#00e676]/10 border border-[#00e676]/30 text-[#00e676] flex items-center justify-center mx-auto">
+              <Lock className="w-7 h-7" />
             </div>
-            <h1 className="text-2xl font-black text-white">Admin Portal</h1>
-            <p className="text-xs text-slate-400">
-              Enter password to upload and manage APK packages
-            </p>
+            <div>
+              <h1 className="text-2xl font-black text-white">Admin Portal</h1>
+              <p className="text-xs text-slate-400 mt-1">
+                Enter your secure password to manage and upload APK packages
+              </p>
+            </div>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -129,11 +129,12 @@ export default function AdminDashboard() {
               </label>
               <input
                 type="password"
-                placeholder="Enter password (default: admin123)"
+                placeholder="Enter admin password"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-[#080d16] border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#00e676]"
                 required
+                autoComplete="current-password"
               />
             </div>
 
@@ -145,15 +146,11 @@ export default function AdminDashboard() {
 
             <button
               type="submit"
-              className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition shadow-lg shadow-emerald-500/20"
+              className="w-full py-3.5 bg-[#00e676] hover:bg-[#00ff87] text-slate-950 font-black rounded-xl text-sm transition shadow-lg shadow-[#00e676]/20"
             >
               Sign In to Dashboard
             </button>
           </form>
-
-          <p className="text-[11px] text-center text-slate-500">
-            Default credentials: <code className="text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">admin123</code>
-          </p>
         </div>
       </div>
     );
@@ -162,11 +159,13 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800/80 p-6 rounded-3xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#0d131f] border border-slate-800/80 p-6 rounded-3xl">
         <div>
           <h1 className="text-2xl font-black text-white flex items-center gap-2">
             <span>Admin Control Panel</span>
-            <span className="text-xs font-mono px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">Live</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 bg-[#00e676]/20 text-[#00e676] rounded-full border border-[#00e676]/30 font-bold uppercase">
+              Cloudflare R2 Connected
+            </span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">Upload, update, and manage your hosted APK applications</p>
         </div>
@@ -174,7 +173,7 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-3">
           <Link
             href="/admin/upload"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition shadow-lg shadow-emerald-500/20"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00e676] hover:bg-[#00ff87] text-slate-950 font-black text-sm transition shadow-lg shadow-[#00e676]/20"
           >
             <UploadCloud className="w-4 h-4 stroke-[2.5]" />
             <span>Upload New APK</span>
@@ -192,8 +191,8 @@ export default function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-slate-900/70 border border-slate-800/80 p-5 rounded-2xl flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+        <div className="bg-[#0d131f] border border-slate-800/80 p-5 rounded-2xl flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-[#00e676]/10 text-[#00e676] flex items-center justify-center">
             <Layers className="w-6 h-6" />
           </div>
           <div>
@@ -202,7 +201,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-slate-900/70 border border-slate-800/80 p-5 rounded-2xl flex items-center gap-4">
+        <div className="bg-[#0d131f] border border-slate-800/80 p-5 rounded-2xl flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center">
             <TrendingUp className="w-6 h-6" />
           </div>
@@ -212,21 +211,21 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-slate-900/70 border border-slate-800/80 p-5 rounded-2xl flex items-center gap-4">
+        <div className="bg-[#0d131f] border border-slate-800/80 p-5 rounded-2xl flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
             <HardDrive className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-xs text-slate-400">Storage Occupied</span>
+            <span className="text-xs text-slate-400">Cloud Storage Used</span>
             <p className="text-2xl font-black text-white">{totalMB} MB</p>
           </div>
         </div>
       </div>
 
       {/* Apps Table */}
-      <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-[#0d131f] border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl">
         <div className="p-4 sm:p-5 border-b border-slate-800/80 flex items-center justify-between">
-          <h2 className="text-base font-bold text-white">Hosted APK Packages ({apps.length})</h2>
+          <h2 className="text-base font-bold text-white">Hosted Packages ({apps.length})</h2>
           <button
             onClick={loadApps}
             className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition"
@@ -243,14 +242,13 @@ export default function AdminDashboard() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950/60 text-slate-400 font-semibold border-b border-slate-800/80 uppercase tracking-wider text-[10px]">
+              <thead className="bg-[#080d16] text-slate-400 font-semibold border-b border-slate-800/80 uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="py-3.5 px-4">Application</th>
                   <th className="py-3.5 px-4">Category</th>
                   <th className="py-3.5 px-4">Version</th>
                   <th className="py-3.5 px-4">Size</th>
                   <th className="py-3.5 px-4">Downloads</th>
-                  <th className="py-3.5 px-4">Uploaded</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -259,11 +257,11 @@ export default function AdminDashboard() {
                   <tr key={app.id} className="hover:bg-slate-800/30 transition">
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-800 p-1 flex-shrink-0 border border-slate-700/60">
+                        <div className="w-10 h-10 rounded-xl bg-slate-900 p-1 flex-shrink-0 border border-slate-700/60">
                           <img
                             src={app.iconUrl}
                             alt=""
-                            className="w-full h-full object-contain rounded-lg"
+                            className="w-full h-full object-cover rounded-lg"
                             onError={(e) => {
                               (e.target as HTMLElement).setAttribute("src", "/sample-icons/default-app.svg");
                             }}
@@ -280,7 +278,7 @@ export default function AdminDashboard() {
                         {app.category}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-emerald-400">
+                    <td className="py-3.5 px-4 font-mono text-[#00e676]">
                       v{app.version}
                     </td>
                     <td className="py-3.5 px-4 font-mono text-slate-300">
@@ -288,9 +286,6 @@ export default function AdminDashboard() {
                     </td>
                     <td className="py-3.5 px-4 font-bold text-white">
                       {app.downloadCount || 0}
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-400">
-                      {new Date(app.createdAt).toLocaleDateString()}
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -304,7 +299,7 @@ export default function AdminDashboard() {
                         <a
                           href={`/api/download/${app.id}`}
                           title="Download APK"
-                          className="p-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 transition"
+                          className="p-1.5 rounded-lg bg-[#00e676]/20 hover:bg-[#00e676]/30 text-[#00e676] transition"
                         >
                           <Download className="w-4 h-4" />
                         </a>
