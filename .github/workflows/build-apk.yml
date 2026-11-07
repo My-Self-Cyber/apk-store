@@ -32,24 +32,45 @@ jobs:
         run: |
           cd flutter-mobile-app
           rm -rf android
-          flutter create --platforms=android --org com.apkstore .
+          flutter create temp_app --platforms=android --org com.apkstore
+          cp -r temp_app/android ./
+          rm -rf temp_app
           
-          # Add Internet permission and generate official logo launcher icons
+          # Configure AndroidManifest, settings.gradle, build.gradle and launcher icons
           python3 -c '
           import os
           from PIL import Image
 
-          # 1. Manifest permission
+          # 1. Update Manifest
           manifest = "android/app/src/main/AndroidManifest.xml"
-          with open(manifest, "r") as f:
-              txt = f.read()
-          if "android.permission.INTERNET" not in txt:
-              txt = txt.replace("<application", "<uses-permission android:name=\"android.permission.INTERNET\" />\n    <application")
-          txt = txt.replace("android:label=\"apk_store_app\"", "android:label=\"APKStore\"")
-          with open(manifest, "w") as f:
-              f.write(txt)
+          if os.path.exists(manifest):
+              with open(manifest, "r") as f:
+                  txt = f.read()
+              if "android.permission.INTERNET" not in txt:
+                  txt = txt.replace("<application", "<uses-permission android:name=\"android.permission.INTERNET\" />\n    <application")
+              txt = txt.replace("android:label=\"temp_app\"", "android:label=\"APKStore\"")
+              with open(manifest, "w") as f:
+                  f.write(txt)
 
-          # 2. Launcher icons from official logo
+          # 2. Update settings.gradle
+          settings = "android/settings.gradle"
+          if os.path.exists(settings):
+              with open(settings, "r") as f:
+                  s = f.read()
+              s = s.replace("rootProject.name = '\''temp_app'\''", "rootProject.name = '\''apk_store_app'\''")
+              with open(settings, "w") as f:
+                  f.write(s)
+
+          # 3. Update build.gradle application id
+          app_gradle = "android/app/build.gradle"
+          if os.path.exists(app_gradle):
+              with open(app_gradle, "r") as f:
+                  g = f.read()
+              g = g.replace("com.apkstore.temp_app", "com.apkstore.client")
+              with open(app_gradle, "w") as f:
+                  f.write(g)
+
+          # 4. Generate Launcher Icons from Official Logo
           if os.path.exists("assets/images/logo.png"):
               img = Image.open("assets/images/logo.png")
               sizes = {
@@ -64,7 +85,7 @@ jobs:
                   os.makedirs(dest_dir, exist_ok=True)
                   resized = img.resize(size, Image.Resampling.LANCZOS)
                   resized.save(os.path.join(dest_dir, "ic_launcher.png"), "PNG")
-              print("Official launcher icons generated!")
+              print("All configurations and launcher icons generated successfully!")
           '
 
           flutter pub get
