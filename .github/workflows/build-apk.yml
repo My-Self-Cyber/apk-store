@@ -36,24 +36,33 @@ jobs:
           cp -rn temp_app/android ./
           rm -rf temp_app
           
-          # Inject permissions using Python
+          # Inject permissions & configure minSdk=21, compileSdk=34
           python3 -c '
-          import os
-          path = "android/app/src/main/AndroidManifest.xml"
-          if os.path.exists(path):
-              with open(path, "r") as f:
-                  txt = f.read()
-              perms = """
-              <uses-permission android:name="android.permission.INTERNET" />
-              <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-              """
-              if "android.permission.INTERNET" not in txt:
-                  txt = txt.replace("<application", perms + "\n    <application")
-              with open(path, "w") as f:
-                  f.write(txt)
-              print("Permissions injected successfully")
+          import re
+
+          manifest = "android/app/src/main/AndroidManifest.xml"
+          with open(manifest, "r") as f:
+              txt = f.read()
+          perms = """
+          <uses-permission android:name="android.permission.INTERNET" />
+          <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+          <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+          <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+          """
+          if "android.permission.INTERNET" not in txt:
+              txt = txt.replace("<application", perms + "\n    <application")
+          with open(manifest, "w") as f:
+              f.write(txt)
+
+          gradle_path = "android/app/build.gradle"
+          with open(gradle_path, "r") as f:
+              g = f.read()
+          g = re.sub(r"minSdkVersion\s+.*", "minSdkVersion 21", g)
+          g = re.sub(r"compileSdkVersion\s+.*", "compileSdkVersion 34", g)
+          g = re.sub(r"targetSdkVersion\s+.*", "targetSdkVersion 34", g)
+          with open(gradle_path, "w") as f:
+              f.write(g)
+          print("Gradle and Manifest configured!")
           '
           
           flutter pub get
@@ -61,7 +70,7 @@ jobs:
       - name: Build Android Release APK
         run: |
           cd flutter-mobile-app
-          flutter build apk --release --no-tree-shake-icons
+          flutter build apk --release --no-tree-shake-icons > build.log 2>&1 || (tail -n 120 build.log; exit 1)
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
