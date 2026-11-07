@@ -28,31 +28,74 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Ensure Gradle Wrapper & Dependencies
+      - name: Prepare Clean Android Project
         run: |
-          # Generate official Flutter gradle wrapper binaries in a temp location
-          flutter create --org com.apkstore --project-name fresh_app /tmp/fresh_app
+          # 1. Generate clean official Flutter Android template
+          flutter create --org com.apkstore --project-name apk_store_app /tmp/fresh_app
           
-          # Copy missing gradle wrapper files to our android folder
-          cp -r /tmp/fresh_app/android/gradle flutter-mobile-app/android/
-          cp /tmp/fresh_app/android/gradlew flutter-mobile-app/android/
-          cp /tmp/fresh_app/android/gradlew.bat flutter-mobile-app/android/
+          # 2. Replace android folder with clean official scaffolding
+          rm -rf flutter-mobile-app/android
+          cp -r /tmp/fresh_app/android flutter-mobile-app/android
           chmod +x flutter-mobile-app/android/gradlew
           
-          # Fetch packages
+          # 3. Inject Internet permission & APKStore label
+          python3 -c '
+          import os
+          from PIL import Image
+
+          # Update AndroidManifest.xml
+          manifest = "flutter-mobile-app/android/app/src/main/AndroidManifest.xml"
+          if os.path.exists(manifest):
+              with open(manifest, "r") as f:
+                  txt = f.read()
+              if "android.permission.INTERNET" not in txt:
+                  txt = txt.replace("<application", "<uses-permission android:name=\"android.permission.INTERNET\" />\n    <application")
+              txt = txt.replace("android:label=\"apk_store_app\"", "android:label=\"APKStore\"")
+              with open(manifest, "w") as f:
+                  f.write(txt)
+
+          # Copy official cyber logo to mipmap launcher icons
+          logo_src = "flutter-mobile-app/assets/images/logo.png"
+          if os.path.exists(logo_src):
+              img = Image.open(logo_src)
+              sizes = {
+                  "mipmap-mdpi": (48, 48),
+                  "mipmap-hdpi": (72, 72),
+                  "mipmap-xhdpi": (96, 96),
+                  "mipmap-xxhdpi": (144, 144),
+                  "mipmap-xxxhdpi": (192, 192),
+              }
+              for folder, size in sizes.items():
+                  dest = os.path.join("flutter-mobile-app/android/app/src/main/res", folder)
+                  os.makedirs(dest, exist_ok=True)
+                  resized = img.resize(size, Image.Resampling.LANCZOS)
+                  resized.save(os.path.join(dest, "ic_launcher.png"), "PNG")
+              print("Official launcher icons and manifest configured!")
+          '
+          
+          # 4. Get dependencies
           cd flutter-mobile-app
           flutter pub get
 
       - name: Build Android Release APK
         run: |
           cd flutter-mobile-app
-          flutter build apk --release --no-tree-shake-icons
+          flutter build apk --release --no-tree-shake-icons --verbose > build.log 2>&1 || (tail -n 80 build.log > ../build_error.txt; exit 1)
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: APKStore-Flutter-App
           path: flutter-mobile-app/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Push Error Log on Failure
+        if: failure()
+        run: |
+          git config user.name "Build Bot"
+          git config user.email "bot@apkstore.com"
+          git add build_error.txt || true
+          git commit -m "Auto-captured build failure log [skip ci]" || true
+          git push origin main || true
 
       - name: Create GitHub Release with direct APK download
         uses: softprops/action-gh-release@v2
