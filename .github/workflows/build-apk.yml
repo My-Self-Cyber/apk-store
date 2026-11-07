@@ -35,15 +35,17 @@ jobs:
           # 1. Create fresh official Flutter project
           flutter create --org com.apkstore --project-name apk_store_app /tmp/fresh_app
 
-          # 2. Copy code, assets, and dependencies
+          # 2. Clean default templates
+          rm -rf /tmp/fresh_app/lib
+          rm -rf /tmp/fresh_app/test
+
+          # 3. Copy our app files
           cp -r flutter-mobile-app/lib /tmp/fresh_app/
           cp -r flutter-mobile-app/assets /tmp/fresh_app/
           cp flutter-mobile-app/pubspec.yaml /tmp/fresh_app/
-
-          # 3. Copy our cyber logo mipmaps
           cp -r flutter-mobile-app/android/app/src/main/res/mipmap-* /tmp/fresh_app/android/app/src/main/res/
 
-          # 4. Update AndroidManifest.xml for APKStore title & Internet access
+          # 4. Configure AndroidManifest
           python3 -c '
           manifest = "/tmp/fresh_app/android/app/src/main/AndroidManifest.xml"
           with open(manifest, "r") as f:
@@ -59,11 +61,11 @@ jobs:
           # 5. Build native APK
           cd /tmp/fresh_app
           flutter pub get
-          flutter build apk --debug
+          flutter build apk --debug --verbose
 
           # 6. Copy final APK to workspace
           mkdir -p $GITHUB_WORKSPACE/final_apk
-          cp build/app/outputs/flutter-apk/app-debug.apk $GITHUB_WORKSPACE/final_apk/APKStore.apk
+          find build -name "*.apk" -exec cp {} $GITHUB_WORKSPACE/final_apk/APKStore.apk \;
           ls -lh $GITHUB_WORKSPACE/final_apk/APKStore.apk
 
       - name: Upload APK Artifact
