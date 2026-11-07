@@ -17,15 +17,35 @@ export default function HomePage() {
   const [apps, setApps] = useState<AppItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [canInstall, setCanInstall] = useState(false);
 
   useEffect(() => {
-    // Check URL params for category or search
+    // Listen for PWA install prompt on Android
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setCanInstall(true);
+    });
+
     const urlParams = new URLSearchParams(window.location.search);
     const cat = urlParams.get("category") || "All";
     const search = urlParams.get("search") || "";
     setSelectedCategory(cat);
     fetchApps(cat, search);
   }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      if (choice.outcome === "accepted") {
+        setCanInstall(false);
+      }
+    } else {
+      alert("To install directly: Open Chrome menu (3 dots) on your phone and tap 'Install App' or 'Add to Home screen'!");
+    }
+  };
 
   const fetchApps = async (cat = selectedCategory, search = "") => {
     try {
@@ -47,7 +67,32 @@ export default function HomePage() {
   };
 
   return (
-    <div className="space-y-12 pb-12">
+    <div className="space-y-8 pb-12">
+      {/* 📲 Direct App Install Banner for Android */}
+      <div className="bg-gradient-to-r from-[#0d1f1b] via-[#0e271f] to-[#0c1a24] border border-[#00e676]/40 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center gap-3.5 text-center sm:text-left">
+          <div className="w-11 h-11 rounded-xl bg-[#00e676]/10 border border-[#00e676]/30 flex items-center justify-center flex-shrink-0">
+            <img src="/logo.webp" alt="Logo" className="w-7 h-7 object-contain" />
+          </div>
+          <div>
+            <h2 className="text-sm sm:text-base font-black text-white flex items-center gap-2 justify-center sm:justify-start">
+              <span>Install Official APKStore App on Android</span>
+              <span className="text-[9px] font-bold uppercase bg-[#00e676] text-slate-950 px-2 py-0.5 rounded-full">Fast</span>
+            </h2>
+            <p className="text-xs text-slate-300 mt-0.5">
+              Install directly on your phone home screen with 1-tap — zero setup required!
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={handleInstallClick}
+          className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#00e676] hover:bg-[#00ff87] text-slate-950 font-black text-xs uppercase tracking-wider transition shadow-lg shadow-[#00e676]/20 whitespace-nowrap flex items-center justify-center gap-2"
+        >
+          <span>📲 Install App (Direct)</span>
+        </button>
+      </div>
+
       {/* Hero Section matching the requested design */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0c121e] via-[#0d1424] to-[#0c1e1c] border border-slate-800/90 p-8 sm:p-12 shadow-2xl">
         {/* Neon green cyber grid effect in top right */}
