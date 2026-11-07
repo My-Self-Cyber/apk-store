@@ -46,8 +46,11 @@ jobs:
           cp flutter-mobile-app/pubspec.yaml /tmp/fresh_app/
           cp -r flutter-mobile-app/android/app/src/main/res/mipmap-* /tmp/fresh_app/android/app/src/main/res/
 
-          # 4. Configure AndroidManifest
+          # 4. Configure AndroidManifest and Kotlin version
           python3 -c '
+          import os, re
+
+          # 1. Update AndroidManifest
           manifest = "/tmp/fresh_app/android/app/src/main/AndroidManifest.xml"
           with open(manifest, "r") as f:
               c = f.read()
@@ -57,6 +60,27 @@ jobs:
           with open(manifest, "w") as f:
               f.write(c)
           print("Updated AndroidManifest successfully!")
+
+          # 2. Update Kotlin Gradle plugin version to 1.9.24 across all android build configs
+          def patch_kotlin(path):
+              if not os.path.exists(path):
+                  return
+              with open(path, "r") as f:
+                  txt = f.read()
+              orig = txt
+              txt = re.sub(r"id\s+[\x22\x27]org\.jetbrains\.kotlin\.android[\x22\x27]\s+version\s+[\x22\x27][^\x22\x27]+[\x22\x27]", "id \"org.jetbrains.kotlin.android\" version \"1.9.24\"", txt)
+              txt = re.sub(r"id\s*\([\x22\x27]org\.jetbrains\.kotlin\.android[\x22\x27]\)\s*version\s*[\x22\x27][^\x22\x27]+[\x22\x27]", "id(\"org.jetbrains.kotlin.android\") version \"1.9.24\"", txt)
+              txt = re.sub(r"ext\.kotlin_version\s*=\s*[\x22\x27][^\x22\x27]+[\x22\x27]", "ext.kotlin_version = \"1.9.24\"", txt)
+              txt = re.sub(r"org\.jetbrains\.kotlin:kotlin-gradle-plugin:[0-9\.]+", "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24", txt)
+              if txt != orig:
+                  with open(path, "w") as f:
+                      f.write(txt)
+                  print(f"Patched Kotlin 1.9.24 in: {path}")
+
+          for root, _, files in os.walk("/tmp/fresh_app/android"):
+              for file in files:
+                  if file.endswith((".gradle", ".gradle.kts")):
+                      patch_kotlin(os.path.join(root, file))
           '
 
           # 5. Build native APK
