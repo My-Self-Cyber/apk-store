@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../models/app_model.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
@@ -381,8 +380,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               width: 54,
                                               height: 54,
                                               color: const Color(0xFF131B2E),
-                                              child: CachedNetworkImage(
-                                                imageUrl: ApiService.resolveUrl(app.iconUrl),
+                                              child: Image.network(ApiService.resolveUrl(app.iconUrl, fit: BoxFit.cover, errorBuilder: (c, e, s) => Image.asset('assets/images/logo.png')),
                                                 fit: BoxFit.cover,
                                                 placeholder: (c, u) => const Center(
                                                   child: CircularProgressIndicator(

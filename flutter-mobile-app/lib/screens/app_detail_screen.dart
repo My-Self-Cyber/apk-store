@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+
 import '../models/app_model.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
@@ -82,8 +82,7 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                     width: 76,
                     height: 76,
                     color: const Color(0xFF131B2E),
-                    child: CachedNetworkImage(
-                      imageUrl: ApiService.resolveUrl(app.iconUrl),
+                    child: Image.network(ApiService.resolveUrl(app.iconUrl, fit: BoxFit.cover, errorBuilder: (c, e, s) => Image.asset('assets/images/logo.png')),
                       fit: BoxFit.cover,
                       placeholder: (c, u) => const Center(
                         child: CircularProgressIndicator(color: AppColors.neonGreen, strokeWidth: 2),
@@ -222,16 +221,12 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                   itemBuilder: (context, index) {
                     return ClipRRect(
                       borderRadius: BorderRadius.circular(14),
-                      child: CachedNetworkImage(
-                        imageUrl: app.screenshots[index],
+                      child: Image.network(
+                        app.screenshots[index],
                         fit: BoxFit.cover,
                         width: 280,
-                        placeholder: (c, u) => Container(
-                          width: 280,
-                          color: AppColors.cardBg,
-                          child: const Center(
-                            child: CircularProgressIndicator(color: AppColors.neonGreen),
-                          ),
+                        errorBuilder: (c, e, s) => Container(width: 280, color: AppColors.cardBg, child: const Icon(Icons.broken_image, color: Colors.grey)),
+                      ),
                         ),
                         errorWidget: (c, u, e) => Container(
                           width: 280,
