@@ -31,13 +31,26 @@ jobs:
       - name: Initialize Android Scaffolding & Dependencies
         run: |
           cd flutter-mobile-app
-          flutter create . --org com.apkstore --project-name apk_store_app
+          # Backup custom launcher icons
+          mkdir -p temp_icons
+          if [ -d "android/app/src/main/res" ]; then
+            cp -r android/app/src/main/res/* temp_icons/ || true
+          fi
+          # Remove partial android folder to allow clean flutter create
+          rm -rf android
+          flutter create --platforms=android --org com.apkstore .
+          # Restore our official custom cyber logo icons
+          if [ -d "temp_icons" ]; then
+            cp -r temp_icons/* android/app/src/main/res/ || true
+          fi
+          # Add permissions to AndroidManifest.xml
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />' android/app/src/main/AndroidManifest.xml
           flutter pub get
 
       - name: Build Android Release APK
         run: |
           cd flutter-mobile-app
-          flutter build apk --release
+          flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -48,9 +61,9 @@ jobs:
       - name: Create GitHub Release with direct APK download
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.1
-          name: "APKStore Flutter Android App (v1.0.1)"
-          body: "Official Flutter Android Native Application (.apk) for APKStore"
+          tag_name: v1.0.${{ github.run_number }}
+          name: "APKStore Mobile App v1.0.${{ github.run_number }}"
+          body: "Official APKStore Android Native Application (.apk) with custom cyber logo and instant package installation."
           files: flutter-mobile-app/build/app/outputs/flutter-apk/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

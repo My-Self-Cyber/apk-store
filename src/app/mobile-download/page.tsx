@@ -22,10 +22,10 @@ export default function MobileDownloadPage() {
 
           <div className="space-y-2">
             <h1 className="text-3xl sm:text-4xl font-black text-white">
-              APKVault Mobile App
+              APKStore Mobile App
             </h1>
             <p className="text-slate-400 text-sm leading-relaxed">
-              Install the official APKVault Android client directly on your device. Browse, search, and install APKs with 1-tap installation directly from your phone!
+              Install the official APKStore Android client directly on your device. Browse, search, and install APKs with 1-tap installation directly from your phone!
             </p>
           </div>
 
@@ -46,11 +46,13 @@ export default function MobileDownloadPage() {
 
           <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <a
-              href="/api/download/quick-notes-pro"
+              href="https://github.com/My-Self-Cyber/apk-store/releases/latest"
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-xl shadow-emerald-500/20 transition"
             >
               <Download className="w-4 h-4 stroke-[2.5]" />
-              <span>Download APKVault Client (v1.0)</span>
+              <span>Download APKStore Client (v1.0)</span>
             </a>
             <span className="text-xs text-center text-slate-500">Android 7.0+ Supported</span>
           </div>

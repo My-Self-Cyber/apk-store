@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "APKVault - Direct Android App & APK Store",
+  title: "APKStore - Safe & Verified Android APK Repository",
   description: "Browse, download, and install latest verified Android APKs directly with zero wait times.",
   icons: {
     icon: [
