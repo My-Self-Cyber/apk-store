@@ -28,10 +28,24 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Ensure Gradle Wrapper & Dependencies
+        run: |
+          # Generate official Flutter gradle wrapper binaries in a temp location
+          flutter create --org com.apkstore --project-name fresh_app /tmp/fresh_app
+          
+          # Copy missing gradle wrapper files to our android folder
+          cp -r /tmp/fresh_app/android/gradle flutter-mobile-app/android/
+          cp /tmp/fresh_app/android/gradlew flutter-mobile-app/android/
+          cp /tmp/fresh_app/android/gradlew.bat flutter-mobile-app/android/
+          chmod +x flutter-mobile-app/android/gradlew
+          
+          # Fetch packages
+          cd flutter-mobile-app
+          flutter pub get
+
       - name: Build Android Release APK
         run: |
           cd flutter-mobile-app
-          flutter pub get
           flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK Artifact
