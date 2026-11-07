@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,12 +28,13 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Install dependencies
+      - name: Initialize Android Scaffolding & Dependencies
         run: |
           cd flutter-mobile-app
+          flutter create . --org com.apkstore --project-name apk_store_app
           flutter pub get
 
-      - name: Build Android APK
+      - name: Build Android Release APK
         run: |
           cd flutter-mobile-app
           flutter build apk --release
@@ -38,16 +42,15 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: APKStore-Release-APK
+          name: APKStore-Flutter-App
           path: flutter-mobile-app/build/app/outputs/flutter-apk/app-release.apk
 
       - name: Create GitHub Release with direct APK download
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.0.0
-          name: "APKStore v1.0.0 Official Release"
-          body: "Official APKStore Android Client (.apk) - Safe & Verified"
+          tag_name: v1.0.1
+          name: "APKStore Flutter Android App (v1.0.1)"
+          body: "Official Flutter Android Native Application (.apk) for APKStore"
           files: flutter-mobile-app/build/app/outputs/flutter-apk/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
