@@ -28,71 +28,10 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Initialize Android Scaffolding & Dependencies
-        run: |
-          cd flutter-mobile-app
-          rm -rf android
-          flutter create temp_app --platforms=android --org com.apkstore
-          cp -r temp_app/android ./
-          rm -rf temp_app
-          
-          # Configure AndroidManifest, settings.gradle, build.gradle and launcher icons
-          python3 -c '
-          import os
-          from PIL import Image
-
-          # 1. Update Manifest
-          manifest = "android/app/src/main/AndroidManifest.xml"
-          if os.path.exists(manifest):
-              with open(manifest, "r") as f:
-                  txt = f.read()
-              if "android.permission.INTERNET" not in txt:
-                  txt = txt.replace("<application", "<uses-permission android:name=\"android.permission.INTERNET\" />\n    <application")
-              txt = txt.replace("android:label=\"temp_app\"", "android:label=\"APKStore\"")
-              with open(manifest, "w") as f:
-                  f.write(txt)
-
-          # 2. Update settings.gradle
-          settings = "android/settings.gradle"
-          if os.path.exists(settings):
-              with open(settings, "r") as f:
-                  s = f.read()
-              s = s.replace("rootProject.name = '\''temp_app'\''", "rootProject.name = '\''apk_store_app'\''")
-              with open(settings, "w") as f:
-                  f.write(s)
-
-          # 3. Update build.gradle application id
-          app_gradle = "android/app/build.gradle"
-          if os.path.exists(app_gradle):
-              with open(app_gradle, "r") as f:
-                  g = f.read()
-              g = g.replace("com.apkstore.temp_app", "com.apkstore.client")
-              with open(app_gradle, "w") as f:
-                  f.write(g)
-
-          # 4. Generate Launcher Icons from Official Logo
-          if os.path.exists("assets/images/logo.png"):
-              img = Image.open("assets/images/logo.png")
-              sizes = {
-                  "mipmap-mdpi": (48, 48),
-                  "mipmap-hdpi": (72, 72),
-                  "mipmap-xhdpi": (96, 96),
-                  "mipmap-xxhdpi": (144, 144),
-                  "mipmap-xxxhdpi": (192, 192),
-              }
-              for folder, size in sizes.items():
-                  dest_dir = os.path.join("android/app/src/main/res", folder)
-                  os.makedirs(dest_dir, exist_ok=True)
-                  resized = img.resize(size, Image.Resampling.LANCZOS)
-                  resized.save(os.path.join(dest_dir, "ic_launcher.png"), "PNG")
-              print("All configurations and launcher icons generated successfully!")
-          '
-
-          flutter pub get
-
       - name: Build Android Release APK
         run: |
           cd flutter-mobile-app
+          flutter pub get
           flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK Artifact
