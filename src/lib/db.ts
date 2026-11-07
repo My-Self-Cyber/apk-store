@@ -38,6 +38,30 @@ export function formatBytes(bytes: number, decimals = 1): string {
 
 const SEED_APPS: AppItem[] = [
   {
+    id: "movieboxpro-mw6c373k",
+    name: "MovieBoxPro",
+    packageName: "com.app.base",
+    version: "13.1",
+    versionCode: 1,
+    category: "Entertainment",
+    developer: "Perhar studio",
+    shortDescription: "MovieBoxPro high-speed entertainment and media player for Android.",
+    description: "Stream and download your favorite movies, series, and entertainment content in high resolution on Android.",
+    iconUrl: "/api/storage/images/1794051745113-Moviebox-Pro.webp",
+    screenshots: [
+      "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&auto=format&fit=crop&q=80"
+    ],
+    apkFileName: "base.apk",
+    apkUrl: "/api/storage/apks/1794051728249-base.apk",
+    fileSize: 74942970,
+    fileSizeFormatted: "71.5 MB",
+    downloadCount: 120,
+    minAndroidVersion: "Android 8.0+",
+    changelog: "Fixed Update",
+    createdAt: "2026-11-07T11:42:26.480Z",
+    updatedAt: "2026-11-07T11:42:26.480Z",
+  },
+  {
     id: "apex-moto-pro",
     name: "Apex Moto Pro",
     packageName: "com.game.apexmotopro",
