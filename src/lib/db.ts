@@ -1,21 +1,35 @@
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { AppItem, CATEGORIES } from "@/types/app";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "apps.json");
+const TMP_DB_FILE = path.join(os.tmpdir(), "apps.json");
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 
-// Ensure directories exist
+// In-memory cache for serverless environments (Vercel)
+let inMemoryApps: AppItem[] | null = null;
+
+// Ensure directories exist safely
 function ensureDirs() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+  } catch (e) {
+    // Read-only filesystem in Vercel serverless, silently ignore
   }
-  if (!fs.existsSync(path.join(UPLOAD_DIR, "apks"))) {
-    fs.mkdirSync(path.join(UPLOAD_DIR, "apks"), { recursive: true });
-  }
-  if (!fs.existsSync(path.join(UPLOAD_DIR, "images"))) {
-    fs.mkdirSync(path.join(UPLOAD_DIR, "images"), { recursive: true });
+
+  try {
+    if (!fs.existsSync(path.join(UPLOAD_DIR, "apks"))) {
+      fs.mkdirSync(path.join(UPLOAD_DIR, "apks"), { recursive: true });
+    }
+    if (!fs.existsSync(path.join(UPLOAD_DIR, "images"))) {
+      fs.mkdirSync(path.join(UPLOAD_DIR, "images"), { recursive: true });
+    }
+  } catch (e) {
+    // Read-only filesystem in Vercel serverless, silently ignore
   }
 }
 
@@ -106,23 +120,58 @@ const SEED_APPS: AppItem[] = [
 ];
 
 export function getDb(): AppItem[] {
+  if (inMemoryApps) {
+    return inMemoryApps;
+  }
+
   ensureDirs();
-  if (!fs.existsSync(DB_FILE)) {
-    saveDb(SEED_APPS);
-    return SEED_APPS;
-  }
+
+  // Try reading from persistent DB file
   try {
-    const raw = fs.readFileSync(DB_FILE, "utf-8");
-    return JSON.parse(raw) as AppItem[];
+    if (fs.existsSync(DB_FILE)) {
+      const raw = fs.readFileSync(DB_FILE, "utf-8");
+      inMemoryApps = JSON.parse(raw) as AppItem[];
+      return inMemoryApps;
+    }
   } catch (err) {
-    console.error("Error reading db file, returning seed:", err);
-    return SEED_APPS;
+    // If reading failed, continue to fallback
   }
+
+  // Try reading from /tmp on serverless
+  try {
+    if (fs.existsSync(TMP_DB_FILE)) {
+      const raw = fs.readFileSync(TMP_DB_FILE, "utf-8");
+      inMemoryApps = JSON.parse(raw) as AppItem[];
+      return inMemoryApps;
+    }
+  } catch (err) {
+    // Continue
+  }
+
+  // Fallback to seed data
+  inMemoryApps = [...SEED_APPS];
+  saveDb(inMemoryApps);
+  return inMemoryApps;
 }
 
 export function saveDb(apps: AppItem[]): void {
+  inMemoryApps = apps;
   ensureDirs();
-  fs.writeFileSync(DB_FILE, JSON.stringify(apps, null, 2), "utf-8");
+
+  // Try saving to project data dir
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(apps, null, 2), "utf-8");
+    return;
+  } catch (err) {
+    // Read-only filesystem in Vercel
+  }
+
+  // Fallback to /tmp on serverless
+  try {
+    fs.writeFileSync(TMP_DB_FILE, JSON.stringify(apps, null, 2), "utf-8");
+  } catch (err) {
+    // In-memory cache handles it
+  }
 }
 
 export function getAllApps(category?: string, search?: string): AppItem[] {
@@ -146,7 +195,7 @@ export function getAllApps(category?: string, search?: string): AppItem[] {
     );
   }
 
-  return apps.sort(
+  return [...apps].sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
 }
