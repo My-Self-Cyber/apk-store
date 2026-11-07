@@ -1,0 +1,120 @@
+lib/screens/home_screen.dart:383:103: Error: No named parameter with the name 'fit'.
+                                              child: Image.network(ApiService.resolveUrl(app.iconUrl, fit: BoxFit.cover, errorBuilder: (c, e, s) => Image.asset('assets/images/logo.png')),
+                                                                                          ^^^
+lib/services/api_service.dart:12:17: Context: Found this candidate, but the arguments don't match.
+  static String resolveUrl(String path) {
+                ^^^^^^^^^^
+lib/screens/home_screen.dart:385:49: Error: No named parameter with the name 'placeholder'.
+                                                placeholder: (c, u) => const Center(
+                                                ^^^^^^^^^^^
+/opt/hostedtoolcache/flutter/stable-3.24.0-x64/flutter/packages/flutter/lib/src/widgets/image.dart:396:3: Context: Found this candidate, but the arguments don't match.
+  Image.network(
+  ^^^^^^^^^^^^^
+lib/screens/app_detail_screen.dart:85:77: Error: No named parameter with the name 'fit'.
+                    child: Image.network(ApiService.resolveUrl(app.iconUrl, fit: BoxFit.cover, errorBuilder: (c, e, s) => Image.asset('assets/images/logo.png')),
+                                                                            ^^^
+lib/services/api_service.dart:12:17: Context: Found this candidate, but the arguments don't match.
+  static String resolveUrl(String path) {
+                ^^^^^^^^^^
+lib/screens/app_detail_screen.dart:87:23: Error: No named parameter with the name 'placeholder'.
+                      placeholder: (c, u) => const Center(
+                      ^^^^^^^^^^^
+/opt/hostedtoolcache/flutter/stable-3.24.0-x64/flutter/packages/flutter/lib/src/widgets/image.dart:396:3: Context: Found this candidate, but the arguments don't match.
+  Image.network(
+  ^^^^^^^^^^^^^
+lib/screens/app_detail_screen.dart:230:25: Error: Expected ';' after this.
+                        ),
+                        ^
+lib/screens/app_detail_screen.dart:230:26: Error: Expected an identifier, but got ','.
+Try inserting an identifier before ','.
+                        ),
+                         ^
+lib/screens/app_detail_screen.dart:230:26: Error: Unexpected token ';'.
+                        ),
+                         ^
+lib/screens/app_detail_screen.dart:235:25: Error: Expected ';' after this.
+                        ),
+                        ^
+lib/screens/app_detail_screen.dart:235:26: Error: Expected an identifier, but got ','.
+Try inserting an identifier before ','.
+                        ),
+                         ^
+lib/screens/app_detail_screen.dart:235:26: Error: Unexpected token ';'.
+                        ),
+                         ^
+lib/screens/app_detail_screen.dart:237:22: Error: Expected ')' before this.
+                    );
+                     ^
+lib/screens/app_detail_screen.dart:242:13: Error: Expected an identifier, but got ']'.
+Try inserting an identifier before ']'.
+            ],
+            ^
+lib/screens/app_detail_screen.dart:242:13: Error: Expected ')' before this.
+            ],
+            ^
+lib/screens/app_detail_screen.dart:61:20: Error: Too many positional arguments: 0 allowed, but 2 found.
+Try removing the extra positional arguments.
+    return Scaffold(
+                   ^
+/opt/hostedtoolcache/flutter/stable-3.24.0-x64/flutter/packages/flutter/lib/src/material/scaffold.dart:1648:9: Context: Found this candidate, but the arguments don't match.
+  const Scaffold({
+        ^^^^^^^^
+lib/screens/app_detail_screen.dart:285:9: Error: Expected ';' after this.
+        ),
+        ^
+lib/screens/app_detail_screen.dart:285:10: Error: Expected an identifier, but got ','.
+Try inserting an identifier before ','.
+        ),
+         ^
+lib/screens/app_detail_screen.dart:285:10: Error: Unexpected token ';'.
+        ),
+         ^
+lib/screens/app_detail_screen.dart:286:7: Error: Expected an identifier, but got ')'.
+Try inserting an identifier before ')'.
+      ),
+      ^
+lib/screens/app_detail_screen.dart:285:10: Error: Expected ';' after this.
+        ),
+         ^
+lib/screens/app_detail_screen.dart:286:7: Error: Unexpected token ';'.
+      ),
+      ^
+lib/screens/app_detail_screen.dart:286:8: Error: Expected an identifier, but got ','.
+Try inserting an identifier before ','.
+      ),
+       ^
+lib/screens/app_detail_screen.dart:286:7: Error: Expected ';' after this.
+      ),
+      ^
+lib/screens/app_detail_screen.dart:286:8: Error: Unexpected token ';'.
+      ),
+       ^
+lib/screens/app_detail_screen.dart:287:5: Error: Expected an identifier, but got ')'.
+Try inserting an identifier before ')'.
+    );
+    ^
+lib/screens/app_detail_screen.dart:286:8: Error: Expected ';' after this.
+      ),
+       ^
+lib/screens/app_detail_screen.dart:287:5: Error: Unexpected token ';'.
+    );
+    ^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command '/opt/hostedtoolcache/flutter/stable-3.24.0-x64/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+
+* Get more help at https://help.gradle.org
+
+BUILD FAILED in 1m 26s
+Running Gradle task 'assembleDebug'...                             87.2s
+Gradle task assembleDebug failed with exit code 1
