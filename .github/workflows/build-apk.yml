@@ -57,9 +57,11 @@ jobs:
           if "INTERNET" not in c:
               c = c.replace("<application", "<uses-permission android:name=\"android.permission.INTERNET\" />\n    <application")
           c = c.replace("android:label=\"apk_store_app\"", "android:label=\"APKStore\"")
+          if "com.google.android.gms.ads.APPLICATION_ID" not in c:
+              c = c.replace("</application>", "    <meta-data android:name=\"com.google.android.gms.ads.APPLICATION_ID\" android:value=\"ca-app-pub-3839531386767343~2207859262\"/>\n    </application>")
           with open(manifest, "w") as f:
               f.write(c)
-          print("Updated AndroidManifest successfully!")
+          print("Updated AndroidManifest with AdMob App ID successfully!")
 
           # 2. Update Kotlin Gradle plugin version to 1.9.24 across all android build configs
           def patch_kotlin(path):

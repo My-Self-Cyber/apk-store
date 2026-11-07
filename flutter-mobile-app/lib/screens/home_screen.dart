@@ -3,6 +3,8 @@ import '../models/app_model.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../services/downloader_service.dart';
+import '../services/ad_service.dart';
+import '../widgets/banner_ad_widget.dart';
 import 'app_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -42,10 +44,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _downloadApp(AppItem app) {
-    setState(() {
-      _downloadingIds.add(app.id);
-      _downloadProgress[app.id] = 0.0;
-    });
+    AdService.showRewardedInterstitial(
+      onProceed: () {
+        setState(() {
+          _downloadingIds.add(app.id);
+          _downloadProgress[app.id] = 0.0;
+        });
 
     DownloaderService.downloadAndInstall(
       appId: app.id,
@@ -71,6 +75,8 @@ class _HomeScreenState extends State<HomeScreen> {
           _downloadingIds.remove(app.id);
           _downloadProgress.remove(app.id);
         });
+      },
+    );
       },
     );
   }
@@ -502,6 +508,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: const BannerAdWidget(),
     );
   }
 

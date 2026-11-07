@@ -4,6 +4,8 @@ import '../models/app_model.dart';
 import '../theme/app_theme.dart';
 import '../services/api_service.dart';
 import '../services/downloader_service.dart';
+import '../services/ad_service.dart';
+import '../widgets/banner_ad_widget.dart';
 
 class AppDetailScreen extends StatefulWidget {
   final AppItem app;
@@ -19,10 +21,12 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
   double _downloadProgress = 0.0;
 
   void _startDownload() {
-    setState(() {
-      _isDownloading = true;
-      _downloadProgress = 0.0;
-    });
+    AdService.showRewardedInterstitial(
+      onProceed: () {
+        setState(() {
+          _isDownloading = true;
+          _downloadProgress = 0.0;
+        });
 
     DownloaderService.downloadAndInstall(
       appId: widget.app.id,
@@ -50,6 +54,8 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
           _isDownloading = false;
           _downloadProgress = 0.0;
         });
+      },
+    );
       },
     );
   }
@@ -229,7 +235,9 @@ class _AppDetailScreenState extends State<AppDetailScreen> {
                           child: const Icon(Icons.broken_image, color: Colors.grey),
                         ),
                       ),
-                    );
+                   ,
+      bottomNavigationBar: const BannerAdWidget(),
+    );
                   },
                 ),
               ),
