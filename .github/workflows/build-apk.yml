@@ -31,20 +31,31 @@ jobs:
       - name: Initialize Android Scaffolding & Dependencies
         run: |
           cd flutter-mobile-app
-          # Backup custom launcher icons
-          mkdir -p temp_icons
-          if [ -d "android/app/src/main/res" ]; then
-            cp -r android/app/src/main/res/* temp_icons/ || true
-          fi
-          # Remove partial android folder to allow clean flutter create
-          rm -rf android
-          flutter create --platforms=android --org com.apkstore .
-          # Restore our official custom cyber logo icons
-          if [ -d "temp_icons" ]; then
-            cp -r temp_icons/* android/app/src/main/res/ || true
-          fi
-          # Add permissions to AndroidManifest.xml
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />' android/app/src/main/AndroidManifest.xml
+          # Generate clean full android template
+          flutter create temp_app --platforms=android --org com.apkstore
+          cp -rn temp_app/android ./
+          rm -rf temp_app
+          
+          # Inject permissions using Python
+          python3 -c '
+          import os
+          path = "android/app/src/main/AndroidManifest.xml"
+          if os.path.exists(path):
+              with open(path, "r") as f:
+                  txt = f.read()
+              perms = """
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+              """
+              if "android.permission.INTERNET" not in txt:
+                  txt = txt.replace("<application", perms + "\n    <application")
+              with open(path, "w") as f:
+                  f.write(txt)
+              print("Permissions injected successfully")
+          '
+          
           flutter pub get
 
       - name: Build Android Release APK
