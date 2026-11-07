@@ -28,74 +28,46 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Prepare Clean Android Project
-        run: |
-          # 1. Generate clean official Flutter Android template
-          flutter create --org com.apkstore --project-name apk_store_app /tmp/fresh_app
-          
-          # 2. Replace android folder with clean official scaffolding
-          rm -rf flutter-mobile-app/android
-          cp -r /tmp/fresh_app/android flutter-mobile-app/android
-          chmod +x flutter-mobile-app/android/gradlew
-          
-          # 3. Inject Internet permission & APKStore label
-          python3 -c '
-          import os
-          from PIL import Image
-
-          # Update AndroidManifest.xml
-          manifest = "flutter-mobile-app/android/app/src/main/AndroidManifest.xml"
-          if os.path.exists(manifest):
-              with open(manifest, "r") as f:
-                  txt = f.read()
-              if "android.permission.INTERNET" not in txt:
-                  txt = txt.replace("<application", "<uses-permission android:name=\"android.permission.INTERNET\" />\n    <application")
-              txt = txt.replace("android:label=\"apk_store_app\"", "android:label=\"APKStore\"")
-              with open(manifest, "w") as f:
-                  f.write(txt)
-
-          # Copy official cyber logo to mipmap launcher icons
-          logo_src = "flutter-mobile-app/assets/images/logo.png"
-          if os.path.exists(logo_src):
-              img = Image.open(logo_src)
-              sizes = {
-                  "mipmap-mdpi": (48, 48),
-                  "mipmap-hdpi": (72, 72),
-                  "mipmap-xhdpi": (96, 96),
-                  "mipmap-xxhdpi": (144, 144),
-                  "mipmap-xxxhdpi": (192, 192),
-              }
-              for folder, size in sizes.items():
-                  dest = os.path.join("flutter-mobile-app/android/app/src/main/res", folder)
-                  os.makedirs(dest, exist_ok=True)
-                  resized = img.resize(size, Image.Resampling.LANCZOS)
-                  resized.save(os.path.join(dest, "ic_launcher.png"), "PNG")
-              print("Official launcher icons and manifest configured!")
-          '
-          
-          # 4. Get dependencies
-          cd flutter-mobile-app
-          flutter pub get
-
       - name: Build Android Release APK
+        working-directory: flutter-mobile-app
         run: |
-          cd flutter-mobile-app
-          flutter build apk --release --no-tree-shake-icons --verbose > build.log 2>&1 || (tail -n 80 build.log > ../build_error.txt; exit 1)
+          # 1. Create fresh official app template
+          flutter create --org com.apkstore --project-name apk_store_app /tmp/fresh_app
+
+          # 2. Backup our official cyber launcher icons
+          mkdir -p /tmp/icons_backup
+          cp -r android/app/src/main/res/mipmap-* /tmp/icons_backup/
+
+          # 3. Replace android directory with fresh official scaffolding
+          rm -rf android
+          cp -r /tmp/fresh_app/android android
+          chmod +x android/gradlew
+
+          # 4. Restore our official cyber icons
+          cp -r /tmp/icons_backup/mipmap-* android/app/src/main/res/
+
+          # 5. Inject Internet permission & label using standard Python
+          python3 -c '
+          path = "android/app/src/main/AndroidManifest.xml"
+          with open(path, "r") as f:
+              c = f.read()
+          if "android.permission.INTERNET" not in c:
+              c = c.replace("<application", "<uses-permission android:name=\"android.permission.INTERNET\" />\n    <application")
+          c = c.replace("android:label=\"apk_store_app\"", "android:label=\"APKStore\"")
+          with open(path, "w") as f:
+              f.write(c)
+          print("Manifest updated successfully!")
+          '
+
+          # 6. Fetch dependencies and compile release APK
+          flutter pub get
+          flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: APKStore-Flutter-App
           path: flutter-mobile-app/build/app/outputs/flutter-apk/app-release.apk
-
-      - name: Push Error Log on Failure
-        if: failure()
-        run: |
-          git config user.name "Build Bot"
-          git config user.email "bot@apkstore.com"
-          git add build_error.txt || true
-          git commit -m "Auto-captured build failure log [skip ci]" || true
-          git push origin main || true
 
       - name: Create GitHub Release with direct APK download
         uses: softprops/action-gh-release@v2
