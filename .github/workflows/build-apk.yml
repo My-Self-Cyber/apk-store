@@ -30,7 +30,7 @@ jobs:
 
       - name: Build Official Android APK
         run: |
-          set -e
+          set +e
 
           # 1. Create fresh official Flutter project
           flutter create --org com.apkstore --project-name apk_store_app /tmp/fresh_app
@@ -38,6 +38,7 @@ jobs:
           # 2. Clean default templates
           rm -rf /tmp/fresh_app/lib
           rm -rf /tmp/fresh_app/test
+          rm -rf /tmp/fresh_app/android/app/src/main/res/mipmap-anydpi-v26
 
           # 3. Copy our app files
           cp -r flutter-mobile-app/lib /tmp/fresh_app/
@@ -61,11 +62,25 @@ jobs:
           # 5. Build native APK
           cd /tmp/fresh_app
           flutter pub get
-          flutter build apk --debug --verbose
+          flutter build apk --debug > /tmp/build.log 2>&1
+          BUILD_STATUS=$?
 
-          # 6. Copy final APK to workspace
           mkdir -p $GITHUB_WORKSPACE/final_apk
           find build -name "*.apk" -exec cp {} $GITHUB_WORKSPACE/final_apk/APKStore.apk \;
+
+          if [ ! -f $GITHUB_WORKSPACE/final_apk/APKStore.apk ]; then
+            echo "Build failed with exit code $BUILD_STATUS"
+            tail -n 120 /tmp/build.log > $GITHUB_WORKSPACE/BUILD_ERROR.txt
+            cd $GITHUB_WORKSPACE
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add BUILD_ERROR.txt
+            git commit -m "Capture build failure log" || true
+            git push origin main || true
+            exit 1
+          fi
+
+          echo "APK generated successfully!"
           ls -lh $GITHUB_WORKSPACE/final_apk/APKStore.apk
 
       - name: Upload APK Artifact
