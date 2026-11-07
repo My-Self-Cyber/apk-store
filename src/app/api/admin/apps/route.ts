@@ -5,6 +5,84 @@ import { AppItem } from "@/types/app";
 
 export async function POST(request: NextRequest) {
   try {
+    const contentType = request.headers.get("content-type") || "";
+
+    // 1. Direct Presigned / JSON Payload (For large APK uploads bypassing Vercel 4.5MB limit)
+    if (contentType.includes("application/json")) {
+      const body = await request.json();
+      const {
+        name,
+        packageName = `com.app.${Date.now()}`,
+        version = "1.0.0",
+        category = "Tools",
+        developer = "Independent Developer",
+        shortDescription = "",
+        description = "",
+        minAndroidVersion = "Android 8.0+",
+        changelog = "Initial release",
+        apkUrl,
+        apkFileName,
+        fileSize = 0,
+        fileSizeFormatted = "",
+        iconUrl = "/sample-icons/default-app.svg",
+        screenshots = [],
+      } = body;
+
+      if (!name) {
+        return NextResponse.json(
+          { success: false, error: "App name is required" },
+          { status: 400 }
+        );
+      }
+
+      if (!apkUrl) {
+        return NextResponse.json(
+          { success: false, error: "APK URL is required" },
+          { status: 400 }
+        );
+      }
+
+      const slug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      const id = `${slug}-${Date.now().toString(36)}`;
+
+      const newApp: AppItem = {
+        id,
+        name,
+        packageName,
+        version,
+        versionCode: 1,
+        category,
+        developer,
+        shortDescription: shortDescription || `${name} application for Android.`,
+        description: description || shortDescription || "No detailed description provided.",
+        iconUrl,
+        screenshots: screenshots.length > 0 
+          ? screenshots 
+          : ["https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&auto=format&fit=crop&q=80"],
+        apkFileName: apkFileName || `${slug}-${version}.apk`,
+        apkUrl,
+        fileSize: Number(fileSize) || 0,
+        fileSizeFormatted: fileSizeFormatted || formatBytes(Number(fileSize) || 0),
+        downloadCount: 0,
+        minAndroidVersion,
+        changelog,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      addApp(newApp);
+
+      return NextResponse.json({
+        success: true,
+        message: "App published successfully to Cloudflare R2!",
+        app: newApp,
+      });
+    }
+
+    // 2. Legacy FormData fallback (For smaller files)
     const formData = await request.formData();
 
     const name = formData.get("name") as string;
@@ -35,14 +113,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate safe clean slug ID
     const slug = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
     const id = `${slug}-${Date.now().toString(36)}`;
 
-    // Upload APK File to Cloudflare R2 or Local Storage
     const safeApkName = `${slug}-${version.replace(/[^a-zA-Z0-9.-]/g, "_")}-${Date.now()}.apk`;
     const apkBuffer = Buffer.from(await apkFile.arrayBuffer());
     const fileSize = apkBuffer.length;
@@ -55,7 +131,6 @@ export async function POST(request: NextRequest) {
       "apks"
     );
 
-    // Upload Icon File if provided
     let iconUrl = iconUrlInput || "/sample-icons/default-app.svg";
     if (iconFile && typeof iconFile !== "string" && iconFile.size > 0) {
       const ext = iconFile.name.substring(iconFile.name.lastIndexOf(".")) || ".png";
@@ -70,7 +145,6 @@ export async function POST(request: NextRequest) {
       iconUrl = iconUpload.url;
     }
 
-    // Upload Screenshots
     const screenshots: string[] = [];
     const screenshotFiles = formData.getAll("screenshotFiles") as (File | string)[];
 

@@ -32,6 +32,8 @@ export default function UploadAppPage() {
   const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
 
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -67,6 +69,61 @@ export default function UploadAppPage() {
     }
   };
 
+  // Direct upload to Cloudflare R2 with progress tracking
+  const uploadDirectToR2 = async (
+    file: File,
+    subFolder: "apks" | "images",
+    onProgress?: (percent: number) => void
+  ): Promise<{ publicUrl: string; objectKey: string }> => {
+    const presignRes = await fetch("/api/admin/get-upload-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName: file.name,
+        contentType: file.type || (subFolder === "apks" ? "application/vnd.android.package-archive" : "image/png"),
+        subFolder,
+      }),
+    });
+
+    const presignData = await presignRes.json();
+    if (!presignData.success || !presignData.uploadUrl) {
+      throw new Error(presignData.error || "Failed to obtain secure Cloudflare R2 upload link");
+    }
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", presignData.uploadUrl, true);
+      xhr.setRequestHeader(
+        "Content-Type", 
+        file.type || (subFolder === "apks" ? "application/vnd.android.package-archive" : "image/png")
+      );
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          onProgress(percent);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({
+            publicUrl: presignData.publicUrl,
+            objectKey: presignData.objectKey,
+          });
+        } else {
+          reject(new Error(`Direct Cloudflare R2 upload returned status ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error("Cloudflare R2 direct upload failed. Please ensure CORS is enabled on your R2 bucket."));
+      };
+
+      xhr.send(file);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
@@ -84,44 +141,71 @@ export default function UploadAppPage() {
 
     try {
       setUploading(true);
+      setUploadProgress(0);
+      setUploadStage("Preparing direct upload to Cloudflare R2...");
 
-      const formData = new FormData();
-      formData.append("name", name);
-      formData.append("packageName", packageName);
-      formData.append("version", version);
-      formData.append("category", category);
-      formData.append("developer", developer || "Independent Developer");
-      formData.append("shortDescription", shortDescription);
-      formData.append("description", description);
-      formData.append("minAndroidVersion", minAndroidVersion);
-      formData.append("changelog", changelog);
-
-      formData.append("apkFile", apkFile);
-
-      if (iconFile) {
-        formData.append("iconFile", iconFile);
-      }
-
-      screenshotFiles.forEach((file) => {
-        formData.append("screenshotFiles", file);
+      // 1. Upload APK directly to R2 with live progress bar
+      setUploadStage(`Uploading ${apkFile.name} (0%)...`);
+      const apkUpload = await uploadDirectToR2(apkFile, "apks", (pct) => {
+        setUploadProgress(pct);
+        setUploadStage(`Uploading ${apkFile.name}: ${pct}%`);
       });
 
+      // 2. Upload Icon if selected
+      let iconUrl = "/sample-icons/default-app.svg";
+      if (iconFile) {
+        setUploadStage("Uploading application icon...");
+        const iconUpload = await uploadDirectToR2(iconFile, "images");
+        iconUrl = iconUpload.publicUrl;
+      }
+
+      // 3. Upload Screenshots if selected
+      const screenshots: string[] = [];
+      if (screenshotFiles.length > 0) {
+        setUploadStage("Uploading screenshots...");
+        for (let i = 0; i < screenshotFiles.length; i++) {
+          const scUpload = await uploadDirectToR2(screenshotFiles[i], "images");
+          screenshots.push(scUpload.publicUrl);
+        }
+      }
+
+      // 4. Publish metadata to Database
+      setUploadStage("Publishing package to APKStore...");
       const res = await fetch("/api/admin/apps", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          packageName,
+          version,
+          category,
+          developer: developer || "Independent Developer",
+          shortDescription,
+          description,
+          minAndroidVersion,
+          changelog,
+          apkUrl: apkUpload.publicUrl,
+          apkFileName: apkFile.name,
+          fileSize: apkFile.size,
+          iconUrl,
+          screenshots,
+        }),
       });
 
       const data = await res.json();
 
       if (data.success) {
-        setSuccessMessage("APK uploaded successfully!");
+        setUploadProgress(100);
+        setUploadStage("Upload Complete!");
+        setSuccessMessage("APK uploaded and published successfully!");
         setTimeout(() => {
           router.push("/admin");
         }, 1500);
       } else {
-        setErrorMessage(data.error || "Failed to upload APK");
+        setErrorMessage(data.error || "Failed to publish APK");
       }
     } catch (err: any) {
+      console.error(err);
       setErrorMessage(err.message || "Network error while uploading");
     } finally {
       setUploading(false);
@@ -150,6 +234,22 @@ export default function UploadAppPage() {
           </p>
         </div>
 
+        {/* Live Upload Progress Indicator */}
+        {uploading && (
+          <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-emerald-400">
+              <span>{uploadStage}</span>
+              <span>{uploadProgress}%</span>
+            </div>
+            <div className="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-emerald-500 to-[#00e676] transition-all duration-150 rounded-full"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {errorMessage && (
           <div className="flex items-center gap-2 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -176,34 +276,35 @@ export default function UploadAppPage() {
                 accept=".apk,application/vnd.android.package-archive"
                 onChange={handleApkChange}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                required
+                required={!apkFile}
               />
               <div className="flex flex-col items-center justify-center space-y-2">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                   <UploadCloud className="w-6 h-6" />
                 </div>
                 {apkFile ? (
-                  <div className="text-xs">
-                    <p className="font-bold text-emerald-400 flex items-center justify-center gap-1">
-                      <FileCheck className="w-4 h-4" /> {apkFile.name}
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-white flex items-center justify-center gap-1.5">
+                      <FileCheck className="w-4 h-4 text-emerald-400" />
+                      <span>{apkFile.name}</span>
                     </p>
-                    <p className="text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-400 font-mono">
                       {(apkFile.size / (1024 * 1024)).toFixed(2)} MB • Ready to upload
                     </p>
                   </div>
                 ) : (
-                  <div className="text-xs">
-                    <p className="font-semibold text-slate-200">
-                      Click to browse or drag & drop .apk file here
+                  <div>
+                    <p className="text-sm font-semibold text-slate-200">
+                      Drop .APK file here or <span className="text-emerald-400 underline">browse</span>
                     </p>
-                    <p className="text-slate-500 mt-1">Supports any Android APK package</p>
+                    <p className="text-[11px] text-slate-500 mt-1">Direct Cloudflare R2 Upload (up to 2 GB per file)</p>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* App Core Info */}
+          {/* App Metadata Inputs */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-200 mb-1">
@@ -211,11 +312,11 @@ export default function UploadAppPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. My Awesome Game"
+                required
+                placeholder="e.g., Telegram"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-                required
               />
             </div>
 
@@ -225,7 +326,7 @@ export default function UploadAppPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. com.company.game"
+                placeholder="e.g., org.telegram.messenger"
                 value={packageName}
                 onChange={(e) => setPackageName(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
@@ -238,11 +339,10 @@ export default function UploadAppPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. 1.0.0"
+                placeholder="e.g., 10.9.1"
                 value={version}
                 onChange={(e) => setVersion(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
-                required
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
               />
             </div>
 
@@ -269,7 +369,7 @@ export default function UploadAppPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. Haroon Studio"
+                placeholder="e.g., Telegram FZ-LLC"
                 value={developer}
                 onChange={(e) => setDeveloper(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
@@ -278,11 +378,11 @@ export default function UploadAppPage() {
 
             <div>
               <label className="block text-xs font-bold text-slate-200 mb-1">
-                Minimum Android OS
+                Minimum Android Version
               </label>
               <input
                 type="text"
-                placeholder="e.g. Android 8.0+ (Oreo)"
+                placeholder="e.g., Android 8.0+"
                 value={minAndroidVersion}
                 onChange={(e) => setMinAndroidVersion(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
@@ -290,31 +390,49 @@ export default function UploadAppPage() {
             </div>
           </div>
 
-          {/* Icon & Screenshots */}
+          {/* Media Uploads */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
             <div>
               <label className="block text-xs font-bold text-slate-200 mb-1">
-                App Icon (PNG / JPG / SVG)
+                App Icon (.png, .webp, .svg)
               </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleIconChange}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-300 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-emerald-500/20 file:text-emerald-300 hover:file:bg-emerald-500/30 cursor-pointer"
-              />
+              <div className="relative border border-slate-800 rounded-xl p-3 text-center bg-slate-950 hover:border-slate-700 transition">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleIconChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
+                  <ImageIcon className="w-4 h-4 text-emerald-400" />
+                  <span className="truncate max-w-[200px]">
+                    {iconFile ? iconFile.name : "Choose Icon File"}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-200 mb-1">
-                Screenshots (Multi-select)
+                Screenshots (Multiple allowed)
               </label>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleScreenshotsChange}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-300 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-emerald-500/20 file:text-emerald-300 hover:file:bg-emerald-500/30 cursor-pointer"
-              />
+              <div className="relative border border-slate-800 rounded-xl p-3 text-center bg-slate-950 hover:border-slate-700 transition">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleScreenshotsChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
+                  <ImageIcon className="w-4 h-4 text-emerald-400" />
+                  <span>
+                    {screenshotFiles.length > 0 
+                      ? `${screenshotFiles.length} screenshots chosen` 
+                      : "Choose Screenshots"}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -326,7 +444,7 @@ export default function UploadAppPage() {
               </label>
               <input
                 type="text"
-                placeholder="Brief one-sentence description of what the app does"
+                placeholder="Brief one-line highlight (shown in cards)"
                 value={shortDescription}
                 onChange={(e) => setShortDescription(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
@@ -368,7 +486,7 @@ export default function UploadAppPage() {
               className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 disabled:opacity-50 text-slate-950 font-bold rounded-xl text-sm transition shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2"
             >
               <UploadCloud className="w-5 h-5 stroke-[2.5]" />
-              <span>{uploading ? "Publishing APK to Store..." : "Publish Application"}</span>
+              <span>{uploading ? (uploadStage || "Publishing APK to Store...") : "Publish Application"}</span>
             </button>
           </div>
         </form>
