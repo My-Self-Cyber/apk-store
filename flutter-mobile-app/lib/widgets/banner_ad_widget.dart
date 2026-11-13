@@ -16,12 +16,24 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   @override
   void initState() {
     super.initState();
+    _loadBanner(useFallback: false);
+  }
+
+  void _loadBanner({required bool useFallback}) {
+    _bannerAd?.dispose();
     _bannerAd = AdService.createBannerAd(
+      useTestFallback: useFallback,
       onAdLoaded: () {
         if (mounted) {
           setState(() {
             _isLoaded = true;
           });
+        }
+      },
+      onFailed: (err) {
+        if (!useFallback && mounted) {
+          // If real ad unit returns error (no-fill or partner bidding), load test banner immediately
+          _loadBanner(useFallback: true);
         }
       },
     )..load();
